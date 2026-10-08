@@ -114,6 +114,13 @@ const api: WeftcutApi = {
     focus: (): Promise<void> => ipcRenderer.invoke('window:focus') as Promise<void>,
   },
 
+  stock: {
+    keyStatus: () => ipcRenderer.invoke('stock:keyStatus'),
+    setKey: (provider, key) => ipcRenderer.invoke('stock:setKey', { provider, key }),
+    search: request => ipcRenderer.invoke('stock:search', request),
+    download: request => ipcRenderer.invoke('stock:download', request),
+  },
+
   dialog: {
     open(opts: DialogOpenOpts): Promise<string | string[] | null> {
       return ipcRenderer.invoke('dialog:open', opts) as Promise<string | string[] | null>

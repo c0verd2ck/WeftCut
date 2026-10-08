@@ -24,6 +24,8 @@ import electronUpdater from 'electron-updater'
 import { createUpdates } from './updates.js'
 import { mediaMimeForExt } from './mediaMime.js'
 import { VLM_ENDPOINT_KEY_TAG } from '../shared/vlm-config.js'
+import { STOCK_KEY_PREFIX } from '../shared/stock-media.js'
+import { installStockMediaIpc } from './stockMediaIpc.js'
 import { registerMotifProtocol } from './motif/protocol.js'
 import { installPerformanceCalibration } from './performanceCalibration.js'
 import { setRuntimeSource, captureMotifFrameB64, captureMotifTexture, setTextureCaptureEnabled, isMotifContentFailure, setMotifStore, shutdownCaptureHost, controlMotifCapture } from './motif/capture.js'
@@ -697,9 +699,10 @@ app.whenReady().then(async () => {
   // reqwest providers + settings_test_provider see them without a renderer round-trip.
   // The VLM endpoint key is skipped: the speech resolver would never read that
   // tag, and pushing one subsystem's secret into the other's config cache is
-  // exactly the coupling this key's own tag exists to avoid.
+  // exactly the coupling this key's own tag exists to avoid. Stock-media catalog
+  // keys are skipped for the same reason: only main's stockMedia reads them.
   for (const [provider, key] of Object.entries(loadAllKeys())) {
-    if (provider === VLM_ENDPOINT_KEY_TAG || provider.startsWith('model-')) continue
+    if (provider === VLM_ENDPOINT_KEY_TAG || provider.startsWith('model-') || provider.startsWith(STOCK_KEY_PREFIX)) continue
     backend.setCloudKey(provider, key)
   }
   // …and the TS-owned local-engine config (non-secret binary/model paths) so the
@@ -1862,6 +1865,13 @@ app.whenReady().then(async () => {
     if (Array.isArray(paths) && paths.length > 0) {
       emitToRenderer('media:external-drop', paths)
     }
+  })
+
+  // Stock media (Pexels / Pixabay / Jamendo): downloads land under the data
+  // root and enter the pool through the same external-drop import as above.
+  installStockMediaIpc({
+    stockDir: path.join(dataRoot.dataRoot, 'stock'),
+    importPaths: (paths) => emitToRenderer('media:external-drop', paths),
   })
 
   // Caption-button controls act on the SENDER's window, not always mainWindow:

@@ -458,6 +458,9 @@ export interface WeftcutApi {
     exists(label: string): Promise<boolean>
   }
   media: { dropped(paths: string[]): Promise<void> }
+  /// Stock video / music search (Pexels, Pixabay, Jamendo). Keys, HTTP and
+  /// downloads stay in main; see shared/stock-media.ts.
+  stock: import('./stock-media').StockMediaApi
   /// Startup notices the renderer pulls on mount (see AppNotice), plus the
   /// version identity behind the Help → About dialog (see AppVersions).
   app: { notices(): Promise<AppNotice[]>; versions(): Promise<AppVersions> }

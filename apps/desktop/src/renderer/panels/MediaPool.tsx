@@ -8,6 +8,7 @@ import {
   LayoutGridIcon,
   ListIcon,
   RectangleHorizontalIcon,
+  FilmIcon,
 } from "lucide-react";
 
 import {
@@ -18,6 +19,7 @@ import {
 import { MediaThumbnail } from "./MediaThumbnail";
 import { mediaReadiness, type ProxyState } from "./mediaReadiness";
 import { isOptimizing, type OptimizeInfo } from "./importOptimize";
+import { StockMediaDialog } from "./StockMediaDialog";
 import { RenameGroupDialog } from "./RenameGroupDialog";
 import {
   filterPoolItems,
@@ -296,6 +298,12 @@ export function MediaPool({
   // rather than re-bound by every re-render underneath it.
   const closeMenu = useCallback(() => setMenu(null), []);
   const [renaming, setRenaming] = useState<GroupPoolItem | null>(null);
+  const [stockOpen, setStockOpen] = useState(false);
+  // Rendered as the FIRST child of both returns below (empty pool and
+  // populated) so it survives the pool filling up while it is open.
+  const stockDialog = stockOpen ? (
+    <StockMediaDialog onClose={() => setStockOpen(false)} />
+  ) : null;
   const [removalTarget, setRemovalTarget] =
     useState<MediaRemovalTarget | null>(null);
   useEffect(
@@ -338,7 +346,12 @@ export function MediaPool({
   const visible = useMemo(() => filterPoolItems(unused, query), [unused, query]);
 
   if (media.length === 0 && groupCount === 0) {
+    // Fragment with the stock dialog first, matching the populated return
+    // below: adding the first stock clip flips the pool out of this branch,
+    // and the open dialog must keep its results across that switch.
     return (
+      <>
+      {stockDialog}
       <div className="media-pool-inner media-pool-inner--empty">
         <p className="placeholder">{t("media_pool.empty")}</p>
         {/* Empty-state CTA: the same import action as the menu, made the
@@ -351,7 +364,12 @@ export function MediaPool({
           <FolderInputIcon size={14} aria-hidden />
           {t("actions.import_media")}
         </Button>
+        <Button size="lg" onClick={() => setStockOpen(true)}>
+          <FilmIcon size={14} aria-hidden />
+          {t("stock_media.open")}
+        </Button>
       </div>
+      </>
     );
   }
 
@@ -460,6 +478,7 @@ export function MediaPool({
 
   return (
     <>
+      {stockDialog}
       <MediaDragPreview />
       {menu && menuTarget && (
         <PoolContextMenu
@@ -510,6 +529,15 @@ export function MediaPool({
           onClick={() => void onImportMedia()}
         >
           <FolderInputIcon size={14} aria-hidden />
+        </button>
+        <button
+          type="button"
+          className="media-import-button"
+          title={t("stock_media.open")}
+          aria-label={t("stock_media.open")}
+          onClick={() => setStockOpen(true)}
+        >
+          <FilmIcon size={14} aria-hidden />
         </button>
         <AppInput
           type="search"
